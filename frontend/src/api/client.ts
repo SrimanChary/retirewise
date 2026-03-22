@@ -1,7 +1,11 @@
 import axios from 'axios'
 
+const BASE_URL = process.env.REACT_APP_API_URL
+  ? `${process.env.REACT_APP_API_URL}/api/v1`
+  : '/api/v1'
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -20,7 +24,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken')
         if (!refreshToken) throw new Error('No refresh token')
-        const { data } = await axios.post('/api/v1/auth/refresh', { refreshToken })
+        const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken })
         localStorage.setItem('accessToken', data.accessToken)
         localStorage.setItem('refreshToken', data.refreshToken)
         original.headers.Authorization = `Bearer ${data.accessToken}`
