@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         Role      @default(USER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  accounts      Account[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id        String      @id @default(cuid())
+  userId    String
+  type      AccountType
+  name      String
+  balance   Decimal     @default(0) @db.Decimal(18, 2)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+  ledgerEntries LedgerEntry[]
+  allocations   Allocation[]
+}
+
+model LedgerEntry {
+  id            String     @id @default(cuid())
+  accountId     String
+  transactionId String
+  type          LedgerType
+  amount        Decimal    @db.Decimal(18, 2)
+  balanceAfter  Decimal    @db.Decimal(18, 2)
+  description   String
+  createdAt     DateTime   @default(now())
+
+  account     Account     @relation(fields: [accountId], references: [id])
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+}
+
+model Transaction {
+  id             String            @id @default(cuid())
+  accountId      String
+  type           TransactionType
+  amount         Decimal           @db.Decimal(18, 2)
+  status         TransactionStatus @default(PENDING)
+  description    String?
+  idempotencyKey String?           @unique
+  createdAt      DateTime          @default(now())
+  settledAt      DateTime?
+
+  account       Account       @relation(fields: [accountId], references: [id])
+  ledgerEntries LedgerEntry[]
+}
+
+model Allocation {
+  id         String  @id @default(cuid())
+  accountId  String
+  assetClass String
+  percentage Decimal @db.Decimal(5, 2)
+
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@unique([accountId, assetClass])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  USER
+  ADVISOR
+  ADMIN
+}
+
+enum AccountType {
+  RETIREMENT_401K
+  IRA_TRADITIONAL
+  IRA_ROTH
+  BROKERAGE
+}
+
+enum TransactionType {
+  CONTRIBUTION
+  WITHDRAWAL
+  REBALANCE
+  FEE
+  DIVIDEND
+}
+
+enum TransactionStatus {
+  PENDING
+  SETTLED
+  FAILED
+  REVERSED
+}
+
+enum LedgerType {
+  DEBIT
+  CREDIT
+}
