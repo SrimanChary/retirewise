@@ -1,6 +1,6 @@
 # RetireWise 🏦
 
-A full-stack retirement portfolio management platform built from my experience working on financial systems at PayPal.
+A retirement portfolio management platform.
 
 ## CI/CD Pipeline
 ![CI](https://github.com/SrimanChary/retirewise/actions/workflows/ci.yml/badge.svg)
